@@ -1,5 +1,5 @@
 # Same stack as the README's venv install, frozen: Python 3.12 venv at /app/venv,
-# vLLM 0.32.0 (torch 2.13 / cu130 / Triton 3.7.1), every compatible patch in
+# vLLM 0.33.0 (torch 2.14 / cu130 / Triton 3.7.1), every compatible patch in
 # patches/ applied,
 # the KVarN KV cache installed, the pth-flash-attn op library built (pthfa/, selected by
 # PTH_FA=1, the default on an 8.6 GPU for SPEC=mtp or dflash2 CTX=long), verify.sh --install and the scratch-pool test run at build time.
@@ -42,6 +42,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends git && rm -rf /
 COPY xgrammar/ xgrammar/
 RUN bash xgrammar/install.sh
 
+# The LSA plugin (lsa/, optional: LSA=1, SPEC=mtp CTX=long): Python and Triton, nothing compiles. The
+# distilled map it reads goes in the models volume, fetched by docker/prepare.sh when LSA=1.
+COPY lsa/ lsa/
+RUN PY=venv/bin/python bash lsa/install.sh --no-map
+
 COPY . .
 # patches/apply.sh reads the apply order from patches/series and applies it with --fuzz 0:
 # a few patches carry hunk context that an earlier patch adds, so the glob order of
@@ -54,6 +59,11 @@ RUN set -e; SP=$(venv/bin/python -c 'import vllm, os; print(os.path.dirname(vllm
     bash patches/apply.sh "$SP"; \
     bash kvarn/install.sh; \
     bash verify.sh --install; \
+    venv/bin/python bench/test_draft_vocab_stats.py; \
+    venv/bin/python bench/test_gdn_checkpoint_safety.py; \
+    venv/bin/python bench/test_gdn_multi_checkpoint.py; \
+    venv/bin/python bench/test_gdn_checkpoint_export.py; \
+    venv/bin/python bench/test_offload_mamba_swa_boundaries.py; \
     venv/bin/python bench/test_dflash_context_capacity.py; \
     venv/bin/python bench/mq3d_scratch_pool_test.py; \
     venv/bin/python bench/test_quant_scale_views.py; \
@@ -63,7 +73,8 @@ RUN set -e; SP=$(venv/bin/python -c 'import vllm, os; print(os.path.dirname(vllm
     CUDA_VISIBLE_DEVICES= venv/bin/python bench/test_async_mamba_kv_sizing.py; \
     CUDA_VISIBLE_DEVICES= venv/bin/python bench/test_kv_cache_seat_budget.py; \
     CUDA_VISIBLE_DEVICES= venv/bin/python bench/test_continuous_stream_usage.py; \
-    venv/bin/python bench/test_gdn_ba_lora.py
+    venv/bin/python bench/test_gdn_ba_lora.py; \
+    CUDA_VISIBLE_DEVICES= venv/bin/python lsa/tests/gate_test.py
 
 # HOME is a volume: torch.compile cache (~/.cache/vllm), Triton (~/.triton),
 # FlashInfer JIT (~/.cache/flashinfer), HF hub cache.
