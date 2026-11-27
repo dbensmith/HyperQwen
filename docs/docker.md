@@ -147,6 +147,9 @@ Docker Engine 29.2.0 / Compose 5.0.2, and one RTX 3090 exposed to the
 container. All six launch configurations passed authenticated API/chat and
 GPU-isolation checks with zero failed benchmark requests. The full failure
 signatures and earlier five-profile matrix are in [issue #1](https://github.com/syv-ai/HyperQwen/issues/1).
+Running the same image under WSL 3's native container runtime, with Windows
+managing the lifecycle instead of Docker-in-WSL, is planned in
+[wsl3-containers.md](wsl3-containers.md).
 
 | profile | measured cache | representative output throughput |
 |---|---:|---:|
