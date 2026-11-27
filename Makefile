@@ -2,7 +2,7 @@
 # checked-in script — no hidden flags. `make help` lists them.
 # Native (venv) launchers remain: bash single-user/start_qwen.sh etc.
 
-.PHONY: help up-single up-batch down logs ps verify verify-install warmup shell keygen doctor
+.PHONY: help up-single up-batch down logs ps verify verify-install warmup shell keygen doctor wsl-nvidia-setup wsl-nvidia-check
 
 help: ## show this list
 	@grep -E '^[a-z-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-14s %s\n", $$1, $$2}'
@@ -50,3 +50,9 @@ keygen: ## append a fresh VLLM_API_KEY to .env without clobbering it (safe to re
 
 doctor: ## read-only status: config + GPU + port + /health + last log error (no secrets printed)
 	bash scripts/hq-doctor.sh
+
+wsl-nvidia-check: ## check WSL host is container-only (nvidia-container-toolkit + CDI, no host kmod/cuda toolkits)
+	bash scripts/wsl-host-nvidia.sh --check
+
+wsl-nvidia-setup: ## clean WSL host NVIDIA kmod/CUDA toolkits and sync CDI spec for Docker
+	bash scripts/wsl-host-nvidia.sh
